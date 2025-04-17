@@ -394,6 +394,48 @@ class GoogleSheetsServer {
             type: 'object',
             properties: {}
           }
+        },
+        {
+          name: 'write_to_sheet',
+          description: 'Write data with headers and rows to a Google Sheet',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              spreadsheetId: { 
+                type: 'string', 
+                description: 'ID of the spreadsheet to write to' 
+              },
+              sheetName: { 
+                type: 'string', 
+                description: 'Name of the sheet to write to' 
+              },
+              data: { 
+                type: 'object',
+                description: 'Data to write to the sheet',
+                properties: {
+                  headers: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Array of column headers'
+                  },
+                  rows: {
+                    type: 'array',
+                    items: {
+                      type: 'array',
+                      items: {}
+                    },
+                    description: 'Array of row data (2D array)'
+                  }
+                },
+                required: ['headers', 'rows']
+              },
+              clearExisting: { 
+                type: 'boolean', 
+                description: 'Whether to clear existing data before writing (default: false)' 
+              }
+            },
+            required: ['spreadsheetId', 'sheetName', 'data']
+          }
         }
       ];
       
@@ -588,6 +630,21 @@ class GoogleSheetsServer {
           
           case 'google_sheets_verify_connection': {
             const result = await this.googleSheets.verifyConnection();
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify(result, null, 2)
+              }]
+            };
+          }
+          
+          case 'write_to_sheet': {
+            const result = await this.googleSheets.writeToSheet(
+              args.spreadsheetId as string,
+              args.sheetName as string,
+              args.data as { headers: string[], rows: any[][] },
+              args.clearExisting as boolean | undefined
+            );
             return {
               content: [{
                 type: 'text',

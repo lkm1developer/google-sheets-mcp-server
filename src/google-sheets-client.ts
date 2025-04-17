@@ -569,6 +569,57 @@ export class GoogleSheetsClient {
   }
 
   /**
+   * Write data with headers and rows to a Google Sheet
+   * @param spreadsheetId ID of the spreadsheet to write to
+   * @param sheetName Name of the sheet to write to
+   * @param data Object containing headers array and rows array
+   * @param clearExisting Whether to clear existing data before writing
+   * @returns Updated spreadsheet details
+   */
+  async writeToSheet(
+    spreadsheetId: string,
+    sheetName: string,
+    data: { headers: string[], rows: any[][] },
+    clearExisting: boolean = false
+  ): Promise<any> {
+    try {
+      const range = `${sheetName}!A1`;
+      
+      // Prepare the values array with headers as the first row
+      const values = [data.headers, ...data.rows];
+      
+      // Clear existing data if requested
+      if (clearExisting) {
+        await this.clearValues(spreadsheetId, sheetName);
+      }
+      
+      // Update the sheet with the new values
+      const response = await this.sheetsClient.spreadsheets.values.update({
+        spreadsheetId,
+        range,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values
+        }
+      });
+      
+      return {
+        success: true,
+        spreadsheetId,
+        updatedRange: response.data.updatedRange,
+        updatedRows: response.data.updatedRows,
+        updatedCells: response.data.updatedCells
+      };
+    } catch (error: any) {
+      console.error('Error writing to sheet:', error);
+      return { 
+        success: false,
+        error: error.message 
+      };
+    }
+  }
+
+  /**
    * Clean up any temporary files created for service account JSON
    */
   private cleanup(): void {
